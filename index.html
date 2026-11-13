@@ -51,12 +51,12 @@ h1{font:700 clamp(1.6rem,3.6vw,2.5rem)/1.05 var(--sans);letter-spacing:-.03em;ma
 .window{background:var(--w-bg);color:var(--w-ink);border:1px solid var(--w-line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;color-scheme:light}
 .app{display:grid;grid-template-columns:52px minmax(0,370px) minmax(0,1fr);min-height:560px}
 .rail{background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0}
-.rail i{display:block;width:30px;height:30px;border-radius:8px;position:relative}
-.rail i::before{content:"";position:absolute;inset:9px;border:1.6px solid #9aa3ab;border-radius:3px}
+.rail i{display:block;width:30px;height:30px;border-radius:8px;position:relative;opacity:.45;cursor:default}
+.rail i::before{content:"";position:absolute;inset:10px;border:1.4px solid #7d868e;border-radius:3px}
 .rail i.dot::before{border-radius:50%}
-.rail i.on{background:#2d343b}
+.rail i.on{background:#2d343b;opacity:.8}
 .rail i.on::before{border-color:#fff}
-.rail .logo{width:26px;height:26px;border-radius:7px;background:var(--orange);margin-bottom:10px}
+.rail .logo{width:26px;height:26px;border-radius:7px;background:var(--orange);margin-bottom:10px;opacity:1}
 .rail .logo::before{display:none}
 .col{display:flex;flex-direction:column;min-width:0}
 .crumb{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--w-line);font-size:.9rem;color:var(--w-muted);min-width:0}
@@ -281,7 +281,7 @@ h1{font:700 clamp(1.6rem,3.6vw,2.5rem)/1.05 var(--sans);letter-spacing:-.03em;ma
 
   function rail(){return '<nav class="rail" aria-hidden="true"><i class="logo"></i><i></i><i></i><i class="dot"></i><i class="on"></i><i></i><i class="dot"></i></nav>'}
   function srcBody(id){
-    var s=SRC[id-1], h='<div class="shead"><b>['+id+'] '+e(s.file)+' · '+e(s.at)+'</b><span class="rel"><em>'+s.rel+' / 10</em>'+e(s.why)+'</span></div>';
+    var s=SRC[id-1], h='<div class="shead"><b>['+id+'] '+e(s.file)+' · '+e(s.at)+'</b><span class="rel"><em>Relevance '+s.rel+'/10</em>'+e(s.why)+'</span></div>';
     if(id===1){
       h+='<div class="tbl"><table><thead><tr><th>Page</th><th>Site · what was taken</th><th class="num">Value</th></tr></thead><tbody>'+
         SITES.map(function(x){return '<tr class="in"><td class="pg">p. '+x.pg+'<small>'+x.date+'</small></td><td><small>'+e(x.site)+'</small>'+e(x.items.join(", "))+'</td><td class="num">'+money(x.val)+'</td></tr>'}).join("")+
