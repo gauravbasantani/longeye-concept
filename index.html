@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Longeye Concept · Gaurav Basantani</title>
+<meta name="description" content="Check what the citation says: a drafted case report where one paragraph cites an interview that says something else, caught before the investigator accepts it. A report screen in the style of Longeye. An unofficial concept by Gaurav Basantani.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* One screen, one moment: a drafted case report in a Longeye style workspace (icon rail, source pane, report pane).
+   Each paragraph's claim is checked against the exact span it cites, and the one that doesn't match is flagged before it is accepted. */
+:root{
+  --bg:#f3f1ee; --page-ink:#0f1010; --page-muted:#55595c; --page-line:#dcd8d2;
+  --accent:#c2410c; --ok:#15803d; --bad:#b42318;
+  /* the app window keeps Longeye's light theme in both page modes (white, warm greys, orange, teal, DM Sans) */
+  --w-bg:#ffffff; --w-2:#f7f7f6; --w-3:#efeeec; --w-line:#e6e4e1; --w-ink:#0f1010; --w-muted:#5f6366; --w-dim:#8a8e91;
+  --rail:#1c2025; --orange:#ea580c; --orange-soft:#fff1e8; --teal:#0b4650; --teal-ink:#f2fbfc;
+  --hl:#fdf6d8; --hl-line:#e8d98f; --amber:#9a5b00; --amber-soft:#fff6e0; --amber-line:#f0c46a;
+  --green:#15803d; --green-soft:#e7f5ec; --red:#b42318; --red-soft:#fdecea;
+  --shadow:0 1px 2px rgba(15,16,16,.06),0 20px 48px rgba(15,16,16,.14);
+  --sans:"DM Sans",system-ui,-apple-system,sans-serif; --mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0c0c; --page-ink:#f3f2f0; --page-muted:#a6aaad; --page-line:#2a2d30;
+  --accent:#fb923c; --ok:#4ade80; --bad:#f87171; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0c0c; --page-ink:#f3f2f0; --page-muted:#a6aaad; --page-line:#2a2d30;
+  --accent:#fb923c; --ok:#4ade80; --bad:#f87171; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--page-ink);font:15px/1.45 var(--sans);padding:26px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+p,h1,h2,h3,ul,ol{margin:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.page{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+/* outside the window: eyebrow, headline, one line, what to notice */
+.head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:16px 40px;align-items:end}
+.eyebrow{font:500 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(1.6rem,3.6vw,2.5rem)/1.05 var(--sans);letter-spacing:-.03em;margin-top:6px}
+.sub{color:var(--page-muted);font-size:1rem;margin-top:6px;max-width:56ch}
+.now{border-left:3px solid var(--accent);padding:3px 0 3px 14px;display:grid;gap:3px;transition:border-color .2s}
+.now.bad{border-color:var(--bad)}
+.now.ok{border-color:var(--ok)}
+.now b{font-weight:600}
+.now.bad b{color:var(--bad)}
+.now.ok b{color:var(--ok)}
+.now span{color:var(--page-muted);font-size:.93rem}
+/* the app window */
+.window{background:var(--w-bg);color:var(--w-ink);border:1px solid var(--w-line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;color-scheme:light}
+.app{display:grid;grid-template-columns:52px minmax(0,370px) minmax(0,1fr);min-height:560px}
+.rail{background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0}
+.rail i{display:block;width:30px;height:30px;border-radius:8px;position:relative}
+.rail i::before{content:"";position:absolute;inset:9px;border:1.6px solid #9aa3ab;border-radius:3px}
+.rail i.dot::before{border-radius:50%}
+.rail i.on{background:#2d343b}
+.rail i.on::before{border-color:#fff}
+.rail .logo{width:26px;height:26px;border-radius:7px;background:var(--orange);margin-bottom:10px}
+.rail .logo::before{display:none}
+.col{display:flex;flex-direction:column;min-width:0}
+.crumb{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--w-line);font-size:.9rem;color:var(--w-muted);min-width:0}
+.crumb b{color:var(--w-ink);font-weight:500}
+.crumb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* source pane */
+.src{border-right:1px solid var(--w-line);background:var(--w-bg)}
+.tabs{display:flex;gap:4px;padding:10px 14px;border-bottom:1px solid var(--w-line)}
+.tabs button{border:1px solid transparent;background:transparent;border-radius:7px;padding:4px 11px;font-size:.84rem;color:var(--w-muted)}
+.tabs button[aria-pressed="true"]{background:var(--w-3);color:var(--w-ink);border-color:var(--w-line)}
+.pane{padding:14px 16px;display:grid;gap:10px;align-content:start}
+.shead{display:grid;gap:4px}
+.shead b{font:500 .84rem var(--mono);overflow-wrap:anywhere}
+.shead small{color:var(--w-muted);font-size:.78rem}
+.rel{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--w-muted)}
+.rel em{white-space:nowrap;font:500 .74rem var(--mono);font-style:normal;background:var(--orange-soft);color:var(--orange);border-radius:5px;padding:1px 6px}
+.tx{display:grid;border:1px solid var(--w-line);border-radius:10px;overflow:hidden}
+.tl{display:grid;grid-template-columns:42px minmax(0,1fr);gap:0 10px;padding:8px 11px;font-size:.86rem}
+.tl+.tl{border-top:1px solid var(--w-line)}
+.tl time{font:400 .76rem/1.6 var(--mono);color:var(--w-dim)}
+.tl small{display:block;color:var(--teal);font-size:.76rem;font-weight:500}
+.tl.in{background:var(--hl)}
+.tl.in time{color:var(--amber)}
+.tl mark{background:transparent;color:inherit;font-weight:600;box-shadow:inset 0 -2px 0 var(--orange)}
+.span-l{font:500 .72rem var(--mono);color:var(--amber);padding:5px 11px;background:var(--hl);border-bottom:1px solid var(--hl-line)}
+.tbl{border:1px solid var(--w-line);border-radius:10px;overflow:hidden;font-size:.82rem}
+.tbl table{border-collapse:collapse;width:100%}
+.tbl th.num{text-align:right}
+.tbl th{text-align:left;font-weight:500;color:var(--w-muted);font-size:.74rem;padding:6px 9px;background:var(--w-2);border-bottom:1px solid var(--w-line)}
+.tbl td{padding:6px 9px;border-top:1px solid var(--w-line);vertical-align:top}
+.tbl tr:first-child td{border-top:0}
+.tbl td.num{text-align:right;font-family:var(--mono);font-size:.78rem;white-space:nowrap}
+.tbl tr.in td{background:var(--hl)}
+.tbl td small{display:block;color:var(--w-muted);font-size:.74rem}
+.tbl td.pg{white-space:nowrap}
+.tbl.nw td{white-space:nowrap}
+.tbl tfoot td{font-weight:600;background:var(--w-2);border-top:1px solid var(--w-line)}
+.frame{aspect-ratio:16/9;border-radius:10px;background:linear-gradient(180deg,#2b3138 0%,#1a1e22 58%,#2a2722 58%,#34302a 100%);position:relative;overflow:hidden;border:1px solid var(--w-line)}
+.frame .box{position:absolute;left:36%;top:38%;width:34%;height:34%;border:2px solid var(--orange);border-radius:3px}
+.frame .box::after{content:"";position:absolute;left:8%;right:8%;bottom:10%;top:22%;background:#d9dcdf;border-radius:4px 4px 2px 2px;opacity:.85}
+.frame .ts{position:absolute;left:8px;top:7px;font:500 .7rem var(--mono);color:#e7e9eb;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:4px}
+.frame .lab{position:absolute;left:36%;top:calc(38% - 20px);font:500 .66rem var(--mono);color:#fff;background:var(--orange);padding:1px 5px;border-radius:3px}
+.moment{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;border:1px solid var(--w-line);border-radius:10px;padding:9px 11px;font-size:.85rem}
+.moment time{font:500 .78rem var(--mono);color:var(--amber);grid-row:span 2}
+.moment b{font-weight:600}
+.moment span{color:var(--w-muted)}
+.chatp{display:grid;gap:10px}
+.bub{background:var(--teal);color:var(--teal-ink);border-radius:12px;padding:10px 12px;font-size:.88rem;justify-self:end;max-width:92%}
+.bub small{display:block;opacity:.75;font-size:.72rem;margin-bottom:2px}
+.ans{font-size:.88rem;color:var(--w-ink)}
+.ans small{display:block;color:var(--w-dim);font-size:.72rem;margin-bottom:2px}
+/* report pane */
+.rep{background:var(--w-bg)}
+.rtop{padding:14px 22px 10px;border-bottom:1px solid var(--w-line);display:grid;gap:8px}
+.rtop h2{font:700 1.15rem/1.25 var(--sans);letter-spacing:-.01em}
+.prog{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.8rem;color:var(--w-muted)}
+.bar{height:4px;border-radius:2px;background:var(--w-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--w-ink);transition:width .2s}
+.prog span:last-child{font-family:var(--mono);font-size:.76rem}
+.rbody{padding:12px 22px 18px;display:grid;gap:8px;align-content:start}
+.sec{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sec h3{font:600 .82rem var(--sans);letter-spacing:.06em}
+.pill{font:500 .72rem var(--sans);border-radius:999px;padding:2px 9px;border:1px solid var(--amber-line);color:var(--amber);background:var(--amber-soft);white-space:nowrap}
+.pill.done{border-color:#9fd7b3;color:var(--green);background:var(--green-soft)}
+.para{border:1px solid var(--w-line);border-radius:10px;padding:10px 12px;display:grid;gap:8px}
+.para.flag{border-color:var(--amber-line);box-shadow:inset 3px 0 0 var(--orange)}
+.para.bad{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+.para.gone p.t{text-decoration:line-through;color:var(--w-dim)}
+.para p.t{font-size:.93rem;line-height:1.5}
+.n{color:var(--w-dim);font:500 .76rem var(--mono);margin-right:4px}
+.cite{font:500 .74rem var(--mono);border:1px solid var(--w-line);background:var(--w-2);border-radius:5px;padding:0 5px;margin-left:3px;vertical-align:1px;color:var(--w-ink)}
+.cite[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.78rem;color:var(--w-muted)}
+.ok{color:var(--green);font-weight:500}
+.chk{color:var(--w-muted)}
+.warnl{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;color:var(--amber);background:var(--amber-soft);border-radius:7px;padding:6px 9px}
+.para.bad .warnl{color:var(--red);background:var(--red-soft)}
+.warnl b{font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:500 .85rem var(--sans);border-radius:8px;padding:6px 12px;border:1px solid #cfccc8;background:var(--w-bg);color:var(--w-ink);min-height:34px}
+.btn.primary{background:var(--w-ink);border-color:var(--w-ink);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.cite:focus-visible,.tabs button:focus-visible,.wf button:focus-visible,input:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.rw{display:grid;gap:6px;border:1px dashed #cfccc8;border-radius:8px;padding:8px 10px;font-size:.88rem}
+.rw small{color:var(--w-muted);font-size:.76rem}
+.rw del{color:var(--red);background:var(--red-soft);text-decoration:line-through}
+.rw ins{color:var(--green);background:var(--green-soft);text-decoration:none}
+.inl{border-top:1px dashed var(--w-line);padding-top:8px;display:grid;gap:8px}
+.att{margin-top:4px;border-top:1px solid var(--w-line);padding-top:12px;display:grid;gap:8px}
+.att p{font-size:.84rem;color:var(--w-muted)}
+.att .row{display:flex;flex-wrap:wrap;gap:8px}
+.att input{border:1px solid #cfccc8;border-radius:8px;padding:6px 10px;min-height:34px;width:min(220px,100%);background:#fff;color:var(--w-ink)}
+.res{border-radius:9px;padding:10px 12px;display:grid;gap:5px;font-size:.86rem;border:1px solid #9fd7b3;background:var(--green-soft)}
+.res h3{font:600 .92rem var(--sans);color:var(--green)}
+.res.warn{border-color:#f1a9a0;background:var(--red-soft)}
+.res.warn h3{color:var(--red)}
+.res p{color:var(--w-muted)}
+.wf{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--w-line);font-size:.76rem;color:var(--w-dim);background:var(--w-2)}
+.wf span{flex:1;min-width:0}
+.wf button{border:1px solid #cfccc8;background:var(--w-bg);color:var(--w-ink);border-radius:7px;padding:4px 11px;font-size:.78rem;font-weight:500;min-height:30px}
+.wf button:disabled{opacity:.4;cursor:default}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 18px;font-size:.78rem;color:var(--page-muted)}
+.foot a{color:var(--page-ink);text-decoration:none;border-bottom:1px solid var(--page-line)}
+@media(min-width:821px){
+  .app{height:clamp(480px,calc(100vh - 280px),660px);min-height:0}
+  .col{min-height:0;overflow:hidden}
+  .pane,.rbody{overflow:auto;min-height:0;flex:1}
+}
+@media(max-width:1060px){.app{grid-template-columns:minmax(0,330px) minmax(0,1fr)}.rail{display:none}}
+@media(max-width:900px){.head{grid-template-columns:1fr;gap:10px}}
+@media(max-width:820px){
+  .app{grid-template-columns:1fr;min-height:0}
+  .src{display:none}
+  .rtop{padding:10px 14px 8px}
+  .rbody{padding:10px 14px 12px}
+}
+@media(max-width:620px){
+  body{padding-top:16px;padding-bottom:20px}
+  .page{gap:12px}
+  h1{font-size:1.55rem}
+  .sub{display:none}
+  .now span{font-size:.88rem}
+  .eyebrow{letter-spacing:.05em;font-size:.66rem}
+  .crumb{padding:9px 14px;font-size:.84rem}
+  .rtop h2{font-size:1rem}
+  .rtop{gap:6px}
+  .para{padding:8px 10px;gap:6px}
+  .para p.t{font-size:.88rem;line-height:1.45}
+  .crumb{display:none}
+  .para.acc:not(.sel){grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+  .para.acc:not(.sel) .chk{display:none}
+  .para.acc:not(.sel) p.t{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .para.acc.sel p.t{display:block}
+  .rel{font-size:.74rem}
+  .inl{padding-top:6px;gap:6px}
+  .tl{grid-template-columns:36px minmax(0,1fr);padding:6px 9px;font-size:.83rem}
+  .tl.ctx{display:none}
+  .tbl{font-size:.78rem}
+  .tbl th,.tbl td{padding:6px 6px}
+  .btn{font-size:.82rem;padding:5px 10px}
+  .hide-s{display:none}
+  .meta{font-size:.74rem}
+}
+@media(prefers-reduced-motion:no-preference){.para,.pane>*,.inl,.res,.rw{animation:in .18s ease-out both}@keyframes in{from{transform:translateY(3px);opacity:.6}}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="head">
+    <div>
+      <div class="eyebrow">Design concept for Longeye · unofficial</div>
+      <h1>Check what the citation says</h1>
+      <p class="sub">An investigator reviews a drafted case report, paragraph by paragraph, in a workspace shaped like Longeye.</p>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+  </header>
+
+  <section class="window" aria-label="Drafted case report and its sources, concept">
+    <div class="app" id="app"></div>
+    <div class="wf"><span>Made-up case, people and evidence</span><button type="button" id="undo">Undo</button><button type="button" id="reset">Start over</button></div>
+  </section>
+
+  <footer class="foot"><span>By Gaurav Basantani · <a href="https://gauravbasantani.com">gauravbasantani.com</a></span><span>Not affiliated with Longeye. The case, agency, people and evidence are made up.</span></footer>
+</div>
+
+<script>
+(function(){
+  /* A made-up case. Every number on the page is computed here from the sources:
+     paragraph 1's total is the sum of the three incident pages; paragraph 4's count and total are the ledger rows;
+     the cited span 4:02-4:09 holds exactly the transcript lines stamped 4:02 to 4:09. */
+  var SITES=[
+    {pg:2,date:"Oct 3",site:"1180 Delmar Ave",items:["Miter saw","Table saw"],val:2300},
+    {pg:3,date:"Oct 4",site:"46 Quarry Rd",items:["Generator","Drill","Drill"],val:1950},
+    {pg:4,date:"Oct 5",site:"902 Lindell St",items:["Compressor","Nail gun","Impact driver"],val:2600}
+  ];
+  var LEDGER=[
+    {row:212,date:"Oct 6",item:"Miter saw",name:"D. Hale",paid:380},
+    {row:213,date:"Oct 6",item:"Generator",name:"D. Hale",paid:420},
+    {row:214,date:"Oct 6",item:"Drill",name:"D. Hale",paid:160},
+    {row:215,date:"Oct 6",item:"Nail gun",name:"D. Hale",paid:160}
+  ];
+  var TX=[
+    {t:"3:51",s:"Det. Joanna Pruitt",w:"Where did the tools go after that?"},
+    {t:"4:02",s:"Marcus Hale",w:"I didn't sell anything. My cousin took them to Eastside Pawn.",m:"I didn't sell anything."},
+    {t:"4:06",s:"Marcus Hale",w:"He said he'd split it with me."},
+    {t:"4:11",s:"Det. Joanna Pruitt",w:"What's your cousin's name?"},
+    {t:"4:14",s:"Marcus Hale",w:"Devin."}
+  ];
+  var SPAN={from:"4:02",to:"4:09"};
+  function sec(t){var a=t.split(":");return +a[0]*60+ +a[1]}
+  function inSpan(l){return sec(l.t)>=sec(SPAN.from)&&sec(l.t)<=sec(SPAN.to)}
+  function money(n){return "$"+n.toLocaleString("en-US")}
+  function sum(a,k){return a.reduce(function(s,x){return s+x[k]},0)}
+  var LAST=SITES[SITES.length-1];
+  var NIGHT="Oct 5";
+  var SRC=[
+    {id:1,file:"incident_reports.pdf",at:"pp. "+SITES[0].pg+"–"+LAST.pg,rel:8,why:"Lists what was taken at each site"},
+    {id:2,file:"site_cam_lindell.mp4",at:"02:47:10",rel:9,why:"A vehicle at the Lindell St site during the theft"},
+    {id:3,file:"interview_hale.m4a",at:SPAN.from+"–"+SPAN.to,rel:9,why:"Names the pawn shop where the tools went"},
+    {id:4,file:"pawn_ledger.csv",at:"rows "+LEDGER[0].row+"–"+LEDGER[LEDGER.length-1].row,rel:10,why:"Stolen tools pawned the day after the last theft"}
+  ];
+  var DRAFT3="In his interview, Marcus Hale said he sold the tools at Eastside Pawn.";
+  var FIX3="In his interview, Marcus Hale said his cousin took the tools to Eastside Pawn and offered to split the money with him.";
+  var PARAS=[
+    {id:1,src:1,text:"Between "+SITES[0].date+" and "+LAST.date+", tools were taken from "+SITES.length+" job sites; the owners valued them at "+money(sum(SITES,"val"))+" in total."},
+    {id:2,src:2,text:"On "+NIGHT+" at 2:47 AM, a camera at the Lindell St site recorded a white van with a partial plate, 7KX."},
+    {id:3,src:3,text:DRAFT3,bad:true},
+    {id:4,src:4,text:"Eastside Pawn's ledger lists "+LEDGER.length+" of the stolen tools, pawned on "+LEDGER[0].date+" for "+money(sum(LEDGER,"paid"))+" under the name "+LEDGER[0].name+"."}
+  ];
+  var FLAG=PARAS.filter(function(p){return p.bad})[0];
+  function e(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+  /* p3: "open" (unreviewed), "acc" (accepted as drafted: the wrong answer), "fixed" (accepted after rewrite), "rej" */
+  function fresh(){return {p3:"open",sel:FLAG.src,tab:"src",rewriting:false,attest:"",done:false,undone:false}}
+  var st=fresh(), hist=[];
+  function snap(){hist.push(JSON.stringify(st))}
+  function wrong(){return st.p3==="acc"}
+  function reviewed(){return PARAS.filter(function(p){return !p.bad||st.p3!=="open"}).length}
+  function files(k){var f={};k.forEach(function(p){f[SRC[p.src-1].file]=1});return Object.keys(f).length}
+  function kept(){return PARAS.filter(function(p){return !(p.bad&&st.p3==="rej")})}
+  var mq=window.matchMedia("(max-width:820px)");
+
+  function rail(){return '<nav class="rail" aria-hidden="true"><i class="logo"></i><i></i><i></i><i class="dot"></i><i class="on"></i><i></i><i class="dot"></i></nav>'}
+  function srcBody(id){
+    var s=SRC[id-1], h='<div class="shead"><b>['+id+'] '+e(s.file)+' · '+e(s.at)+'</b><span class="rel"><em>'+s.rel+' / 10</em>'+e(s.why)+'</span></div>';
+    if(id===1){
+      h+='<div class="tbl"><table><thead><tr><th>Page</th><th>Site · what was taken</th><th class="num">Value</th></tr></thead><tbody>'+
+        SITES.map(function(x){return '<tr class="in"><td class="pg">p. '+x.pg+'<small>'+x.date+'</small></td><td><small>'+e(x.site)+'</small>'+e(x.items.join(", "))+'</td><td class="num">'+money(x.val)+'</td></tr>'}).join("")+
+        '</tbody><tfoot><tr><td colspan="2">Total</td><td class="num">'+money(sum(SITES,"val"))+'</td></tr></tfoot></table></div>';
+    }else if(id===2){
+      h+='<div class="frame" role="img" aria-label="Camera frame, a van inside an orange box"><span class="ts">'+NIGHT+' · 02:47:10</span><span class="lab">vehicle</span><span class="box"></span></div>'+
+        '<div class="moment"><time>02:47:10</time><b>White van enters the site</b><span>Partial plate read: 7KX</span></div>';
+    }else if(id===3){
+      h+='<div class="tx">'+TX.map(function(l){var i=inSpan(l);var w=e(l.w);if(l.m&&i)w=w.replace(e(l.m),'<mark>'+e(l.m)+'</mark>');
+        return '<div class="tl'+(i?' in':' ctx')+'"><time>'+l.t+'</time><span><small>'+e(l.s)+'</small>'+w+'</span></div>'}).join("")+'</div>';
+    }else{
+      h+='<div class="tbl nw"><table><thead><tr><th>Row</th><th>Date</th><th>Item</th><th>Name</th><th class="num">Paid</th></tr></thead><tbody>'+
+        LEDGER.map(function(x){return '<tr class="in"><td>'+x.row+'</td><td>'+x.date+'</td><td>'+e(x.item)+'</td><td>'+e(x.name)+'</td><td class="num">'+money(x.paid)+'</td></tr>'}).join("")+
+        '</tbody><tfoot><tr><td colspan="4">Total</td><td class="num">'+money(sum(LEDGER,"paid"))+'</td></tr></tfoot></table></div>';
+    }
+    return h;
+  }
+  function srcPane(){
+    var h='<div class="col src"><div class="tabs"><button type="button" data-tab="chat" aria-pressed="'+(st.tab==="chat")+'">Chat</button><button type="button" data-tab="src" aria-pressed="'+(st.tab==="src")+'">Source ['+st.sel+']</button></div><div class="pane">';
+    if(st.tab==="chat"){
+      h+='<div class="chatp"><div class="bub"><small>Det. Joanna Pruitt</small>Draft the Findings section of the case report from the evidence. Cite a source for every sentence.</div>'+
+         '<div class="ans"><small>Chat</small>Drafted the Findings section in the report on the right. Each paragraph cites the exact page, second or row it came from.</div></div>';
+    }else h+=srcBody(st.sel);
+    return h+'</div></div>';
+  }
+  function para(p){
+    var isF=p.bad, text=isF&&st.p3==="fixed"?FIX3:p.text, sel=st.sel===p.src;
+    var cls="para"+(isF&&st.p3==="open"?" flag":"")+(isF&&wrong()?" bad":"")+(isF&&st.p3==="rej"?" gone":"")+(!isF?" acc":"")+(sel?" sel":"");
+    var inl=mq.matches&&sel?'<div class="inl">'+srcBody(p.src)+'</div>':'';
+    var h='<div class="'+cls+'"><p class="t"><span class="n">'+p.id+'</span>'+e(text)+'<button type="button" class="cite" data-cite="'+p.src+'" aria-pressed="'+sel+'" aria-label="Show source '+p.src+'">'+p.src+'</button></p>';
+    if(!isF){
+      h+='<div class="meta"><span class="ok">✓ Accepted</span><span class="chk">Matches its source</span></div>';
+    }else if(st.p3==="open"){
+      h+='<div class="warnl"><span aria-hidden="true">⚠</span><span><b>The cited span doesn\'t say this.</b> <span class="hide-s">Checked against '+e(SRC[p.src-1].file)+' '+SPAN.from+'–'+SPAN.to+'.</span></span></div>'+inl;inl='';
+      if(st.rewriting){
+        h+='<div class="rw"><small>Rewrite from the cited span</small><span>In his interview, Marcus Hale said <del>he sold the tools at</del> <ins>his cousin took the tools to</ins> Eastside Pawn<ins> and offered to split the money with him</ins>.</span><div class="btns"><button type="button" class="btn primary" data-use="1">Use rewrite</button><button type="button" class="btn" data-cancel="1">Cancel</button></div></div>';
+      }else{
+        h+='<div class="btns"><button type="button" class="btn" data-acc="1">Accept</button><button type="button" class="btn primary" data-rw="1">Rewrite from source</button><button type="button" class="btn" data-rej="1">Reject</button></div>';
+      }
+    }else if(wrong()){
+      h+='<div class="warnl"><span aria-hidden="true">⚠</span><span><b>Accepted, but the cited span says otherwise.</b></span></div>'+inl;inl='';
+    }else if(st.p3==="fixed"){
+      h+='<div class="meta"><span class="ok">✓ Accepted · edited</span><span class="chk">Matches its source · first draft kept</span></div>';
+    }else{
+      h+='<div class="meta"><span>Rejected · left out of the report</span></div>';
+    }
+    return h+inl+'</div>';
+  }
+  function report(){
+    var r=reviewed(), n=PARAS.length, all=r===n;
+    var h='<div class="col rep"><div class="crumb"><span>[Synthetic] Job-site tool thefts</span><span aria-hidden="true">›</span><b>Report</b></div>';
+    h+='<div class="rtop"><h2>Case Report: Job-Site Tool Thefts (Draft)</h2><div class="prog"><span>Paragraphs reviewed</span><span class="bar"><i style="width:'+(100*r/n)+'%"></i></span><span>'+r+'/'+n+'</span></div></div>';
+    h+='<div class="rbody"><div class="sec"><h3>FINDINGS</h3><span class="pill'+(all&&!wrong()?" done":"")+'">'+(wrong()?"Needs a fix":all?"Reviewed":"Unreviewed")+'</span></div>';
+    h+=PARAS.map(para).join("");
+    if(wrong()){
+      h+='<div class="res warn"><h3>Heads up: paragraph '+FLAG.id+' says something its source doesn\'t</h3><p>Fix it before you attest. Undo puts it back to unreviewed.</p><div class="btns"><button type="button" class="btn primary" data-undo="1">Undo</button></div></div>';
+    }else if(st.done){
+      var k=kept();
+      h+='<div class="res"><h3>Report finalized</h3><p>'+k.length+' paragraphs, each one click from its source ('+files(k)+' cited files). The first draft is kept with the report.</p></div>';
+    }else if(all){
+      var ok=st.attest.trim().toLowerCase()==="i attest";
+      h+='<div class="att"><p>Type <b>I attest</b> to finalize. You are the author of this report.</p><div class="row"><input id="att" aria-label="Type I attest" placeholder="I attest" value="'+e(st.attest)+'" autocomplete="off"><button type="button" class="btn primary" data-fin="1"'+(ok?"":" disabled")+'>Finalize report</button></div></div>';
+    }
+    return h+'</div></div>';
+  }
+  function narrate(){
+    var n=document.getElementById("now"), cls="", b, s;
+    if(wrong()){cls="bad";b="Paragraph "+FLAG.id+" is in the report, and its source says the opposite.";s="At 4:02 Hale says he didn't sell anything. Undo, then rewrite it from the source."}
+    else if(st.done){cls="ok";b="Finalized. Every sentence says what its source says.";s=st.p3==="fixed"?"The first draft is kept, so a reviewer can see what changed in paragraph "+FLAG.id+".":"Paragraph "+FLAG.id+" is out; the rest each match their source."}
+    else if(st.rewriting){b="The rewrite uses only the words in "+SPAN.from+"–"+SPAN.to+".";s="The cousin's name comes at 4:14, outside the cited span, so it stays out."}
+    else if(st.p3==="fixed"){cls="ok";b="Paragraph "+FLAG.id+" now says what Hale said.";s="Every paragraph is reviewed. Type I attest to finalize."}
+    else if(st.p3==="rej"){cls="ok";b="Paragraph "+FLAG.id+" is out of the report.";s="The others each match their source. Type I attest to finalize."}
+    else if(st.undone){cls="ok";b="Undone. Paragraph "+FLAG.id+" is unreviewed again.";s="Rewrite it from the source, or reject it."}
+    else if(st.tab==="chat"){b="Chat drafted the section and cited every sentence.";s="A citation shows where to look. It doesn't prove the sentence. Open Source ["+FLAG.src+"]."}
+    else if(st.sel!==FLAG.src){b="Paragraph "+st.sel+" matches its source.";s="The highlighted part is what it cites. Now check paragraph "+FLAG.id+" against its source."}
+    else{b="Every paragraph has a citation. One citation doesn't say what its paragraph says.";s="Read paragraph "+FLAG.id+" against the interview. Try accepting it anyway."}
+    n.className="now "+cls;n.innerHTML='<b>'+e(b)+'</b><span>'+e(s)+'</span>';
+  }
+  var A=document.getElementById("app"), U=document.getElementById("undo");
+  function render(){
+    A.innerHTML=rail()+(mq.matches?"":srcPane())+report();
+    U.disabled=!hist.length;
+    narrate();
+  }
+  function show(sel){var x=A.querySelector(sel);if(x)x.scrollIntoView({block:"nearest"})}
+  function undo(){if(!hist.length)return;st=JSON.parse(hist.pop());st.undone=true;render()}
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest("button"); if(!b||b.disabled)return;
+    var d=b.dataset;
+    if(b.id==="undo"||d.undo){undo();return}
+    if(b.id==="reset"){st=fresh();hist=[];render();scrollTo(0,0);return}
+    st.undone=false;
+    if(d.tab)st.tab=d.tab;
+    if(d.cite){st.sel=+d.cite;st.tab="src"}
+    if(d.acc){snap();st.undone=false;st.p3="acc";st.sel=FLAG.src;st.tab="src"}
+    if(d.rw){st.rewriting=true;st.sel=FLAG.src;st.tab="src"}
+    if(d.cancel)st.rewriting=false;
+    if(d.use){snap();st.undone=false;st.p3="fixed";st.rewriting=false}
+    if(d.rej){snap();st.undone=false;st.p3="rej";st.rewriting=false}
+    if(d.fin){snap();st.undone=false;st.done=true}
+    render();
+    if(d.acc)show(".res");
+    if(d.rw)show(".rw");
+    if(d.use||d.rej)show(".att");
+    if(d.fin)show(".res");
+  });
+  A.addEventListener("input",function(ev){
+    if(ev.target.id!=="att")return;
+    st.attest=ev.target.value;
+    var f=A.querySelector("[data-fin]");if(f)f.disabled=st.attest.trim().toLowerCase()!=="i attest";
+  });
+  mq.addEventListener("change",render);
+  render();
+})();
+</script>
+</body>
+</html>
